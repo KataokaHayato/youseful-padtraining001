@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計データ会員ポータル</title>
+<style>
+  :root{
+    --ink:#1a2530;
+    --ink-soft:#5a6470;
+    --paper:#ffffff;
+    --paper-line:#e6e9ec;
+    --grid:#dfe3e6;
+    --accent:#02a0ab;
+    --accent-dark:#017f88;
+    --accent-soft:#e5f5f6;
+    --gold:#02a0ab;
+    --alert:#c0392b;
+    --white:#ffffff;
+    --shade:#f6f8f9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:"Yu Gothic","游ゴシック",YuGothic,"Yu Gothic Medium",Arial,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+    min-height:100vh;
+  }
+  .mono{font-family:Arial,"Yu Gothic",sans-serif;font-variant-numeric:tabular-nums}
+
+  /* ===== ヘッダー ===== */
+  header{
+    background:var(--white);
+    color:var(--ink);
+    border-bottom:3px solid var(--accent);
+  }
+  .head-inner{
+    max-width:1080px;margin:0 auto;padding:14px 24px;
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  }
+  .logo{font-size:20px;font-weight:700;letter-spacing:.08em}
+  .logo .mark{color:var(--accent)}
+  .head-sub{font-size:12px;color:var(--ink-soft);letter-spacing:.15em}
+  /* 右上のアカウント表示 */
+  .head-account{
+    margin-left:auto;display:none;align-items:center;gap:14px;font-size:13px;
+  }
+  .head-account .user{color:var(--ink-soft)}
+  .head-account .user b{color:var(--accent)}
+  .head-account .logout{
+    font-size:12px;padding:7px 14px;background:none;
+    border:1px solid var(--grid);color:var(--ink-soft);
+    cursor:pointer;border-radius:2px;
+  }
+  .head-account .logout:hover{border-color:var(--ink-soft);color:var(--ink)}
+
+  main{max-width:1080px;margin:0 auto;padding:32px 24px 64px}
+
+  /* ===== ログイン画面 ===== */
+  .login-wrap{
+    max-width:336px;margin:34px auto 48px;
+    background:var(--white);
+    border:1px solid var(--paper-line);
+    border-top:4px solid var(--accent);
+    box-shadow:0 12px 30px rgba(18,33,58,.08);
+  }
+  .login-head{padding:26px 32px 4px}
+  .login-eyebrow{font-size:11px;letter-spacing:.28em;color:var(--gold);font-weight:700}
+  .login-head h1{font-size:22px;margin-top:8px;letter-spacing:.04em}
+  .login-head p{font-size:13px;color:var(--ink-soft);margin-top:6px}
+  .login-body{padding:14px 32px 32px}
+  .field{margin-top:18px}
+  .field label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:6px}
+  .field input{
+    width:100%;padding:11px 12px;font-size:15px;
+    border:1px solid var(--grid);background:var(--shade);
+    color:var(--ink);border-radius:2px;
+  }
+  .field input:focus{outline:2px solid var(--accent);outline-offset:1px;background:#fff}
+  .field input::placeholder{color:#c4cace}
+  .btn{
+    width:100%;margin-top:24px;padding:13px;
+    background:var(--accent);color:#fff;border:none;
+    font-size:15px;font-weight:700;letter-spacing:.12em;
+    cursor:pointer;border-radius:2px;transition:background .15s;
+  }
+  .btn:hover{background:var(--accent-dark)}
+  .btn:active{transform:translateY(1px)}
+  .err{
+    margin-top:16px;padding:10px 14px;background:#f7e9e6;
+    border-left:3px solid var(--alert);color:var(--alert);
+    font-size:13px;display:none;
+  }
+
+  /* ===== アプリ本体 ===== */
+  .app{display:none}
+
+  /* ナビ（データページのタブ的リンク） */
+  .pagenav{
+    display:flex;gap:4px;flex-wrap:wrap;
+    border-bottom:2px solid var(--accent);margin-bottom:28px;
+  }
+  .pagenav button{
+    background:none;border:none;padding:11px 16px;font-size:13px;
+    font-weight:700;letter-spacing:.04em;color:var(--ink-soft);cursor:pointer;
+    border-bottom:3px solid transparent;margin-bottom:-2px;
+    font-family:inherit;
+  }
+  .pagenav button:hover{color:var(--ink)}
+  .pagenav button.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* 各ページ共通 */
+  .page{display:none}
+  .page.active{display:block}
+  .page-head{margin-bottom:8px}
+  .page-eyebrow{font-size:11px;letter-spacing:.24em;color:var(--gold);font-weight:700}
+  .page-head h2{font-size:26px;letter-spacing:.03em;margin-top:6px}
+  .page-head p{font-size:13px;color:var(--ink-soft);margin-top:6px;max-width:640px}
+
+  .refresh-row{
+    display:flex;align-items:center;gap:12px;margin:20px 0 24px;font-size:12px;color:var(--ink-soft);
+  }
+  .refresh{
+    font-size:13px;padding:8px 18px;font-weight:700;letter-spacing:.06em;
+    background:var(--accent);color:#fff;border:none;border-radius:2px;cursor:pointer;
+    transition:background .15s;font-family:inherit;
+  }
+  .refresh:hover{background:var(--accent-dark)}
+  .refresh:active{transform:translateY(1px)}
+
+  /* 指標カード */
+  .cards{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:1px;background:var(--grid);border:1px solid var(--grid);margin-bottom:32px;
+  }
+  .card{background:var(--white);padding:22px 24px}
+  .card .label{font-size:12px;letter-spacing:.1em;color:var(--ink-soft);font-weight:700}
+  .card .unit{font-size:11px;color:var(--gold);margin-left:2px}
+  .card .value{
+    font-size:36px;font-weight:700;color:var(--ink);
+    margin-top:10px;letter-spacing:-.01em;
+  }
+  .card .delta{font-size:12px;margin-top:6px}
+  .up{color:var(--accent)} .down{color:var(--alert)}
+
+  /* テーブル */
+  .table-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+  .table-head h3{font-size:16px;letter-spacing:.04em}
+  .table-head span{font-size:12px;color:var(--ink-soft)}
+  .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;background:var(--white);font-size:14px;min-width:420px}
+  caption{caption-side:top;text-align:left;font-size:11px;color:var(--gold);letter-spacing:.2em;padding-bottom:8px;font-weight:700}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--paper-line)}
+  thead th{background:var(--accent);color:var(--white);font-size:12px;letter-spacing:.06em;font-weight:600;border-bottom:none}
+  tbody tr:nth-child(even){background:var(--shade)}
+  td.num{text-align:right}
+  th.num{text-align:right}
+  .row-updated{animation:flash 1s ease-out}
+  @keyframes flash{0%{background:#dff3f4}100%{}}
+
+  /* チャート */
+  .chart-block{
+    background:var(--white);border:1px solid var(--grid);
+    padding:20px 22px 14px;margin-bottom:32px;
+  }
+  .chart-block h3{font-size:15px;letter-spacing:.04em;margin-bottom:2px}
+  .chart-block .chart-cap{font-size:11px;color:var(--gold);letter-spacing:.18em;font-weight:700;margin-bottom:14px}
+  .chart-svg{width:100%;height:auto;display:block}
+  .chart-svg text{font-family:Arial,"Yu Gothic",sans-serif}
+  .grid-line{stroke:var(--paper-line);stroke-width:1}
+  .axis-label{fill:var(--ink-soft);font-size:13px}
+  .legend-label{fill:var(--ink-soft);font-size:12px}
+  .bar-rect{fill:var(--accent);transition:width .4s ease,height .4s ease,y .4s ease}
+  .bar-track{fill:var(--shade)}
+  .bar-value{fill:var(--ink);font-size:12px;font-weight:700}
+  .bar-name{fill:var(--ink-soft);font-size:12px}
+  .line-path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+  .line-area{fill:var(--accent-soft);opacity:.6}
+  .line-dot{fill:var(--white);stroke:var(--accent);stroke-width:2}
+
+  /* ===== ページャー（次へ/戻る＋数字） ===== */
+  .pager{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:40px;padding-top:24px;border-top:1px solid var(--paper-line);
+    flex-wrap:wrap;
+  }
+  .pager button{
+    min-width:40px;height:40px;padding:0 12px;font-size:14px;font-weight:700;
+    background:var(--white);border:1px solid var(--grid);color:var(--ink-soft);
+    cursor:pointer;border-radius:2px;font-family:inherit;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .pager button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .pager button.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+  .pager .nav-btn{padding:0 16px}
+
+  /* ===== レスポンシブ ===== */
+  /* タブレット */
+  @media(max-width:768px){
+    .head-inner{padding:12px 18px;gap:6px 14px}
+    .logo{font-size:18px}
+    .head-sub{font-size:11px}
+    main{padding:24px 18px 56px}
+    .page-head h2{font-size:22px}
+    .card{padding:18px 20px}
+    .card .value{font-size:32px}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .chart-block{padding:16px 16px 12px}
+  }
+  /* スマートフォン */
+  @media(max-width:520px){
+    /* ヘッダーは縦積み・左揃え */
+    .head-inner{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 16px}
+    .head-account{margin-left:0;width:100%;justify-content:space-between;font-size:12px}
+    .logo{font-size:17px}
+    main{padding:20px 14px 48px}
+    /* 主要指標カードは1列 */
+    .cards{grid-template-columns:1fr}
+    .card{padding:16px 18px}
+    .card .value{font-size:30px}
+    /* ページ見出し */
+    .page-head h2{font-size:20px}
+    .page-eyebrow{font-size:10px;letter-spacing:.18em}
+    /* 上部ナビは横スクロールで全タブを保持 */
+    .pagenav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .pagenav button{padding:9px 12px;font-size:12px;white-space:nowrap;flex:0 0 auto}
+    /* 更新行 */
+    .refresh-row{flex-wrap:wrap;gap:8px}
+    /* テーブル見出し */
+    .table-head{flex-wrap:wrap;gap:4px}
+    .table-head h3{font-size:15px}
+    /* ページャーはコンパクトに */
+    .pager{gap:4px;margin-top:32px}
+    .pager button{min-width:36px;height:36px;font-size:13px;padding:0 8px}
+    .pager .nav-btn{padding:0 10px;font-size:12px}
+    /* ログインカードは画面幅に追従 */
+    .login-wrap{max-width:none;width:100%;margin:24px 0 40px}
+    .login-head{padding:22px 22px 4px}
+    .login-body{padding:12px 22px 26px}
+  }
+  /* 小型スマートフォン */
+  @media(max-width:380px){
+    .logo{font-size:15px}
+    .head-sub{display:none}
+    .card .value{font-size:26px}
+    .page-head h2{font-size:18px}
+    .pager button{min-width:32px;height:32px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <div class="logo"><span class="mark">◆</span> 統計データ会員ポータル</div>
+    <div class="head-sub">STATBASE MEMBER PORTAL</div>
+    <!-- 右上：ログイン中アカウント -->
+    <div class="head-account" id="headAccount">
+      <span class="user">ログイン中：<b id="loginName">HK0001</b> 様</span>
+      <button class="logout" id="logoutBtn" type="button">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ========== ① ログイン ========== -->
+  <section class="login-wrap" id="loginView">
+    <div class="login-head">
+      <div class="login-eyebrow">MEMBER SIGN IN</div>
+      <h1>会員ログイン</h1>
+    </div>
+    <div class="login-body">
+      <div class="field">
+        <label for="userId">ユーザーID</label>
+        <input type="text" id="userId" name="userId" autocomplete="username" placeholder="例：HK0001">
+      </div>
+      <div class="field">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" placeholder="パスワードを入力">
+      </div>
+      <div class="err" id="loginError">IDまたはパスワードが正しくありません。もう一度入力してください。</div>
+      <button class="btn" id="loginBtn" type="button">ログイン</button>
+    </div>
+  </section>
+
+  <!-- ========== ② アプリ（ログイン後） ========== -->
+  <section class="app" id="appView">
+    <nav class="pagenav" id="pageNav"><!-- JSで生成 --></nav>
+    <div id="pageContainer"><!-- JSで生成 --></div>
+    <div class="pager" id="pager"><!-- JSで生成 --></div>
+  </section>
+
+</main>
+
+<script>
+/* =========================================================
+   ① ログイン処理
+   ========================================================= */
+var VALID_ID   = "HK0001";
+var VALID_PASS = "1234";
+
+var loginView   = document.getElementById("loginView");
+var appView     = document.getElementById("appView");
+var headAccount = document.getElementById("headAccount");
+var loginError  = document.getElementById("loginError");
+
+function doLogin(){
+  var id = document.getElementById("userId").value.trim();
+  var pw = document.getElementById("password").value;
+  if(id === VALID_ID && pw === VALID_PASS){
+    loginError.style.display = "none";
+    document.getElementById("loginName").textContent = id;
+    loginView.style.display   = "none";
+    appView.style.display     = "block";
+    headAccount.style.display = "flex";
+    goToPage(0);
+    window.scrollTo(0,0);
+  }else{
+    loginError.style.display = "block";
+  }
+}
+document.getElementById("loginBtn").addEventListener("click", doLogin);
+document.getElementById("password").addEventListener("keydown", function(e){
+  if(e.key === "Enter") doLogin();
+});
+document.getElementById("logoutBtn").addEventListener("click", function(){
+  appView.style.display     = "none";
+  headAccount.style.display = "none";
+  loginView.style.display   = "block";
+  document.getElementById("password").value = "";
+  window.scrollTo(0,0);
+});
+
+/* =========================================================
+   ② データページ定義
+   各ページは render(el) で描画、refresh(el) で更新時に数値を振り直す。
+   ========================================================= */
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function frand(min,max){ return Math.random()*(max-min)+min; }
+function fmt(n){ return Math.round(n).toLocaleString("ja-JP"); }
+function fmt2(n){ return n.toLocaleString("ja-JP",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function sign(n){ return (n>=0?"+":"") + fmt(n); }
+function signF(n,d){ return (n>=0?"+":"") + n.toFixed(d); }
+
+function cardHTML(label, unit, valueId, deltaId){
+  return "<div class='card'>"+
+    "<div class='label'>"+label+"<span class='unit'>"+unit+"</span></div>"+
+    "<div class='value mono' id='"+valueId+"'>—</div>"+
+    "<div class='delta up' id='"+deltaId+"'>—</div>"+
+  "</div>";
+}
+function setVal(id, text){ var e=document.getElementById(id); if(e) e.textContent=text; }
+function setDelta(id, val, prefix, digits){
+  var e=document.getElementById(id); if(!e) return;
+  var txt = digits>0 ? signF(val,digits) : sign(val);
+  e.textContent = prefix + txt;
+  e.className = "delta " + (val>=0 ? "up" : "down");
+}
+
+/* ---- SVGチャート描画ヘルパー ---- */
+// 横棒グラフ： data = [{name, value}] , valFmt = 値の整形関数
+function drawBarChart(id, data, valFmt){
+  var el=document.getElementById(id); if(!el) return;
+  var W=680, rowH=38, padL=110, padR=70, top=8;
+  var H=top + data.length*rowH + 6;
+  var max=Math.max.apply(null, data.map(function(d){return d.value;}))*1.05;
+  var svg='<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  data.forEach(function(d,i){
+    var y=top + i*rowH;
+    var barY=y+8, barH=rowH-18;
+    var full=W-padL-padR;
+    var w=Math.max(2, full * (d.value/max));
+    svg+='<text class="bar-name" x="'+(padL-10)+'" y="'+(barY+barH/2+4)+'" text-anchor="end">'+d.name+'</text>';
+    svg+='<rect class="bar-track" x="'+padL+'" y="'+barY+'" width="'+full+'" height="'+barH+'" rx="2"/>';
+    svg+='<rect class="bar-rect" x="'+padL+'" y="'+barY+'" width="'+w+'" height="'+barH+'" rx="2"/>';
+    svg+='<text class="bar-value" x="'+(padL+w+8)+'" y="'+(barY+barH/2+4)+'">'+valFmt(d.value)+'</text>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+// 折れ線グラフ： values = [数値...]（時系列）
+function drawLineChart(id, values, valFmt){
+  var el=document.getElementById(id); if(!el) return;
+  var W=680, H=240, padL=54, padR=16, padT=18, padB=28;
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  var min=Math.min.apply(null,values), max=Math.max.apply(null,values);
+  var span=(max-min)||1; min-=span*0.15; max+=span*0.15; span=max-min;
+  var n=values.length;
+  function X(i){ return padL + plotW*(i/(n-1)); }
+  function Y(v){ return padT + plotH*(1-(v-min)/span); }
+  var svg='<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  // 目盛り線＋Y軸ラベル
+  for(var g=0;g<=4;g++){
+    var gv=min+span*(g/4), gy=Y(gv);
+    svg+='<line class="grid-line" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>';
+    svg+='<text class="axis-label" x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end">'+valFmt(gv)+'</text>';
+  }
+  // エリア
+  var area='M '+X(0)+' '+(padT+plotH);
+  values.forEach(function(v,i){ area+=' L '+X(i)+' '+Y(v); });
+  area+=' L '+X(n-1)+' '+(padT+plotH)+' Z';
+  svg+='<path class="line-area" d="'+area+'"/>';
+  // ライン
+  var line='M '+X(0)+' '+Y(values[0]);
+  values.forEach(function(v,i){ if(i>0) line+=' L '+X(i)+' '+Y(v); });
+  svg+='<path class="line-path" d="'+line+'"/>';
+  // 末尾ドット
+  svg+='<circle class="line-dot" cx="'+X(n-1)+'" cy="'+Y(values[n-1])+'" r="4"/>';
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+function chartBlock(title, cap, chartId){
+  return "<div class='chart-block'><h3>"+title+"</h3>"+
+    "<div class='chart-cap'>"+cap+"</div>"+
+    "<div id='"+chartId+"'></div></div>";
+}
+
+// X軸ラベル付き折れ線： data=[{year,pop}] , valFmt=Y値整形 , xFmt=X軸整形
+function drawLineChartXY(id, data, valFmt, xFmt, opts){
+  var el=document.getElementById(id); if(!el) return;
+  opts=opts||{};
+  var W=680, H=280, padL=58, padR=18, padT=18, padB=40;
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  var vals=data.map(function(d){return d.pop;});
+  var min=(opts.min!==undefined)?opts.min:0;
+  var max;
+  if(opts.max!==undefined){ max=opts.max; }
+  else { max=Math.max.apply(null,vals); var sp0=(max-min)||1; max+=sp0*0.08; }
+  var span=(max-min)||1;
+  var ticks=opts.ticks||4;               // 目盛り区間数
+  var labelStep=opts.labelStep||1;       // X軸ラベルを何点ごとに出すか
+  var n=data.length;
+  function X(i){ return padL + plotW*(i/(n-1)); }
+  function Y(v){ return padT + plotH*(1-(v-min)/span); }
+  var svg='<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  for(var g=0;g<=ticks;g++){
+    var gv=min+span*(g/ticks), gy=Y(gv);
+    svg+='<line class="grid-line" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>';
+    svg+='<text class="axis-label" x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end">'+valFmt(gv)+'</text>';
+  }
+  data.forEach(function(d,i){
+    if(i%labelStep===0 || i===n-1)
+      svg+='<text class="axis-label" x="'+X(i)+'" y="'+(H-14)+'" text-anchor="middle">'+xFmt(d.year)+'</text>';
+  });
+  var area='M '+X(0)+' '+(padT+plotH);
+  data.forEach(function(d,i){ area+=' L '+X(i)+' '+Y(d.pop); });
+  area+=' L '+X(n-1)+' '+(padT+plotH)+' Z';
+  svg+='<path class="line-area" d="'+area+'"/>';
+  var line='M '+X(0)+' '+Y(data[0].pop);
+  data.forEach(function(d,i){ if(i>0) line+=' L '+X(i)+' '+Y(d.pop); });
+  svg+='<path class="line-path" d="'+line+'"/>';
+  data.forEach(function(d,i){
+    svg+='<circle class="line-dot" cx="'+X(i)+'" cy="'+Y(d.pop)+'" r="3"/>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+// 複数系列折れ線： series=[{name,color,values:[...]}] , years=[...] , valFmt
+function drawMultiLineChart(id, years, series, valFmt, opts){
+  var el=document.getElementById(id); if(!el) return;
+  opts=opts||{};
+  var W=680, H=320, padL=52, padR=16, padT=16, padB=58;
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  var allVals=[]; series.forEach(function(s){ allVals=allVals.concat(s.values); });
+  var min=(opts.min!==undefined)?opts.min:0;
+  var max=(opts.max!==undefined)?opts.max:Math.max.apply(null,allVals)*1.08;
+  var span=(max-min)||1;
+  var ticks=opts.ticks||4, labelStep=opts.labelStep||1;
+  var n=years.length;
+  function X(i){ return padL + plotW*(i/(n-1)); }
+  function Y(v){ return padT + plotH*(1-(v-min)/span); }
+  var svg='<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  for(var g=0;g<=ticks;g++){
+    var gv=min+span*(g/ticks), gy=Y(gv);
+    svg+='<line class="grid-line" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>';
+    svg+='<text class="axis-label" x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end">'+valFmt(gv)+'</text>';
+  }
+  years.forEach(function(y,i){
+    if(i%labelStep===0 || i===n-1)
+      svg+='<text class="axis-label" x="'+X(i)+'" y="'+(padT+plotH+18)+'" text-anchor="middle">'+y+'</text>';
+  });
+  // 各系列のライン
+  series.forEach(function(s){
+    var line='';
+    s.values.forEach(function(v,i){
+      // 値が0（未登場）区間はスキップして途中から描く
+      if(v===null || v===undefined) return;
+      line+=(line===''?'M':'L')+' '+X(i)+' '+Y(v)+' ';
+    });
+    svg+='<path d="'+line+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  });
+  // 凡例（横一列）
+  var ly=padT+plotH+40;
+  var slotW=(W-padL-padR)/series.length;
+  series.forEach(function(s,i){
+    var x=padL + slotW*i;
+    svg+='<rect x="'+x+'" y="'+(ly-8)+'" width="12" height="4" fill="'+s.color+'" rx="1"/>';
+    svg+='<text class="legend-label" x="'+(x+17)+'" y="'+(ly-3)+'">'+s.name+'</text>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+/* ---- ページ定義 ---- */
+var PAGES = [
+
+/* 0. 会員統計ダッシュボード */
+{
+  nav:"会員統計", eyebrow:"MEMBER DASHBOARD", title:"会員統計",
+  desc:"",
+  state:{members:128450, access:3200, index:1042.50, rate:92.4},
+  regions:[
+    {code:"HKD",name:"北海道",base:8200},{code:"THK",name:"東北",base:11400},
+    {code:"KTO",name:"関東",base:42600},{code:"CHB",name:"中部",base:18900},
+    {code:"KNS",name:"近畿",base:24300},{code:"CHG",name:"中四国",base:9700},
+    {code:"KYU",name:"九州",base:13350}
+  ],
+  render:function(el){
+    el.innerHTML =
+      "<div class='cards'>"+
+        cardHTML("総会員数","名","m0-members","d0-members")+
+        cardHTML("本日アクセス数","件","m0-access","d0-access")+
+        cardHTML("市場指数","pt","m0-index","d0-index")+
+        cardHTML("稼働率","%","m0-rate","d0-rate")+
+      "</div>"+
+      chartBlock("地域別 登録件数","REGIONAL FIGURES","chart0")+
+      "<div class='table-head'><h3>地域別 集計値</h3></div>"+
+      "<div class='table-scroll'><table id='dataTable'><caption>REGIONAL FIGURES</caption>"+
+      "<thead><tr><th>地域コード</th><th>地域名</th><th class='num'>登録件数</th>"+
+      "<th class='num'>当月増減</th><th class='num'>達成率(%)</th></tr></thead>"+
+      "<tbody id='tableBody'></tbody></table></div>";
+    this.refresh(el);
+  },
+  refresh:function(el){
+    var s=this.state;
+    var dM=rand(3,45), dA=rand(-80,160), dI=frand(-3,3), dR=frand(-0.6,0.6);
+    s.members+=dM; s.access=Math.max(0,s.access+dA);
+    s.index=Math.max(0,s.index+dI); s.rate=Math.min(100,Math.max(0,s.rate+dR));
+    setVal("m0-members",fmt(s.members)); setVal("m0-access",fmt(s.access));
+    setVal("m0-index",fmt2(s.index));    setVal("m0-rate",s.rate.toFixed(1));
+    setDelta("d0-members",dM,"前日比 ",0); setDelta("d0-access",dA,"前時比 ",0);
+    setDelta("d0-index",dI,"前回比 ",2);   setDelta("d0-rate",dR,"前回比 ",1);
+    var tb=document.getElementById("tableBody"); if(!tb) return; tb.innerHTML="";
+    var chartData=[];
+    this.regions.forEach(function(r){
+      var delta=rand(-120,260), count=r.base+rand(0,400)+delta;
+      var achieve=(85+Math.random()*15).toFixed(1);
+      chartData.push({name:r.name, value:count});
+      var tr=document.createElement("tr"); tr.className="row-updated";
+      tr.innerHTML="<td class='mono'>"+r.code+"</td><td>"+r.name+"</td>"+
+        "<td class='num mono'>"+fmt(count)+"</td>"+
+        "<td class='num mono "+(delta>=0?"up":"down")+"'>"+sign(delta)+"</td>"+
+        "<td class='num mono'>"+achieve+"</td>";
+      tb.appendChild(tr);
+    });
+    drawBarChart("chart0", chartData, function(v){return fmt(v);});
+  }
+},
+
+/* 1. 為替相場 */
+{
+  nav:"為替相場", eyebrow:"FX RATES", title:"為替相場",
+  desc:"",
+  state:{usdjpy:157.20, eurjpy:169.80, gbpjpy:199.40, audjpy:104.10, eurusd:1.0800, btcusd:96500, hist:[]},
+  render:function(el){
+    el.innerHTML=
+      "<div class='cards'>"+
+        cardHTML("USD/JPY 米ドル円","","m1-usdjpy","d1-usdjpy")+
+        cardHTML("EUR/JPY ユーロ円","","m1-eurjpy","d1-eurjpy")+
+        cardHTML("GBP/JPY ポンド円","","m1-gbpjpy","d1-gbpjpy")+
+        cardHTML("AUD/JPY 豪ドル円","","m1-audjpy","d1-audjpy")+
+        cardHTML("EUR/USD ユーロドル","","m1-eurusd","d1-eurusd")+
+        cardHTML("BTC/USD ビットコイン","$","m1-btc","d1-btc")+
+      "</div>"+
+      chartBlock("USD/JPY 推移","USD / JPY TREND","chart1");
+    // 履歴を初期化（初回のみ）
+    if(this.state.hist.length===0){
+      var v=this.state.usdjpy;
+      for(var i=0;i<11;i++){ this.state.hist.push(v); v+=frand(-0.5,0.5); }
+      this.state.hist.push(this.state.usdjpy);
+    }
+    this.refresh(el);
+  },
+  refresh:function(el){
+    var s=this.state;
+    var d1=frand(-0.6,0.6),d2=frand(-0.7,0.7),d3=frand(-0.9,0.9),d4=frand(-0.4,0.4),
+        d5=frand(-0.004,0.004),d6=rand(-1200,1200);
+    s.usdjpy+=d1; s.eurjpy+=d2; s.gbpjpy+=d3; s.audjpy+=d4; s.eurusd+=d5; s.btcusd=Math.max(0,s.btcusd+d6);
+    setVal("m1-usdjpy",fmt2(s.usdjpy)); setVal("m1-eurjpy",fmt2(s.eurjpy));
+    setVal("m1-gbpjpy",fmt2(s.gbpjpy)); setVal("m1-audjpy",fmt2(s.audjpy));
+    setVal("m1-eurusd",s.eurusd.toFixed(4)); setVal("m1-btc",fmt(s.btcusd));
+    setDelta("d1-usdjpy",d1,"前回比 ",2); setDelta("d1-eurjpy",d2,"前回比 ",2);
+    setDelta("d1-gbpjpy",d3,"前回比 ",2); setDelta("d1-audjpy",d4,"前回比 ",2);
+    setDelta("d1-eurusd",d5,"前回比 ",4); setDelta("d1-btc",d6,"前回比 ",0);
+    // 履歴を更新（直近12点を保持）
+    s.hist.push(s.usdjpy); if(s.hist.length>12) s.hist.shift();
+    drawLineChart("chart1", s.hist.slice(), function(v){return fmt2(v);});
+  }
+},
+
+/* 2. 世界の人口 */
+{
+  nav:"人口推移", eyebrow:"WORLD POPULATION", title:"人口推移",
+  desc:"",
+  state:{world:8231000000},
+  // 世界人口の推計（国連 WPP）。1950〜2025は実績・推計、2030は将来推計(約85億)。
+  worldHistory:[
+    {year:1950, pop:2536000000},{year:1955, pop:2773000000},
+    {year:1960, pop:3034000000},{year:1965, pop:3339000000},
+    {year:1970, pop:3700000000},{year:1975, pop:4079000000},
+    {year:1980, pop:4458000000},{year:1985, pop:4870000000},
+    {year:1990, pop:5327000000},{year:1995, pop:5744000000},
+    {year:2000, pop:6143000000},{year:2005, pop:6542000000},
+    {year:2010, pop:6957000000},{year:2015, pop:7380000000},
+    {year:2020, pop:7841000000},{year:2025, pop:8231000000},
+    {year:2030, pop:8546000000}
+  ],
+  // 2025年の実ランキング（UNFPA 世界人口白書2025 に準拠）。上位20か国。
+  countries:[
+    {rank:1, name:"インド",base:1463900000},{rank:2, name:"中国",base:1416100000},
+    {rank:3, name:"アメリカ",base:347300000},{rank:4, name:"インドネシア",base:285700000},
+    {rank:5, name:"パキスタン",base:255200000},{rank:6, name:"ナイジェリア",base:237500000},
+    {rank:7, name:"ブラジル",base:212800000},{rank:8, name:"バングラデシュ",base:175700000},
+    {rank:9, name:"ロシア",base:144000000},{rank:10, name:"エチオピア",base:135500000},
+    {rank:11, name:"メキシコ",base:131900000},{rank:12, name:"日本",base:123100000},
+    {rank:13, name:"エジプト",base:118400000},{rank:14, name:"フィリピン",base:116800000},
+    {rank:15, name:"コンゴ民主共和国",base:112800000},{rank:16, name:"ベトナム",base:101300000},
+    {rank:17, name:"イラン",base:92400000},{rank:18, name:"トルコ",base:87700000},
+    {rank:19, name:"ドイツ",base:84100000},{rank:20, name:"タイ",base:71600000}
+  ],
+  render:function(el){
+    el.innerHTML=
+      "<div class='cards'>"+
+        cardHTML("世界人口（推計）","人","m2-world","d2-world")+
+        cardHTML("本日の出生数","人","m2-births","d2-births")+
+        cardHTML("本日の死亡数","人","m2-deaths","d2-deaths")+
+        cardHTML("本日の自然増","人","m2-net","d2-net")+
+      "</div>"+
+      chartBlock("世界人口の推移（1950〜2030年）","WORLD POPULATION TREND","chart2")+
+      "<div class='table-head'><h3>人口の多い国（2025年・推計）</h3></div>"+
+      "<div class='table-scroll'><table><caption>TOP POPULATIONS</caption>"+
+      "<thead><tr><th>順位</th><th>国名</th><th class='num'>人口（推計）</th>"+
+      "<th class='num'>本日増減</th></tr></thead>"+
+      "<tbody id='pop-body'></tbody></table></div>";
+    this.refresh(el);
+  },
+  refresh:function(el){
+    var s=this.state;
+    var grow=rand(150000,320000); s.world+=grow;
+    var births=rand(360000,410000), deaths=rand(150000,175000), net=births-deaths;
+    setVal("m2-world",fmt(s.world)); setVal("m2-births",fmt(births));
+    setVal("m2-deaths",fmt(deaths)); setVal("m2-net",fmt(net));
+    setDelta("d2-world",grow,"更新間 ",0);
+    setDelta("d2-births",rand(-4000,6000),"前回比 ",0);
+    setDelta("d2-deaths",rand(-2000,3000),"前回比 ",0);
+    setDelta("d2-net",rand(-3000,5000),"前回比 ",0);
+    var tb=document.getElementById("pop-body"); if(!tb) return; tb.innerHTML="";
+    this.countries.forEach(function(c){
+      var inc=rand(2000,60000); c.base+=inc;
+      var tr=document.createElement("tr"); tr.className="row-updated";
+      tr.innerHTML="<td class='mono'>"+c.rank+"</td><td>"+c.name+"</td>"+
+        "<td class='num mono'>"+fmt(c.base)+"</td>"+
+        "<td class='num mono up'>"+sign(inc)+"</td>";
+      tb.appendChild(tr);
+    });
+    // 2025年の点を現在の世界人口カードと連動させて微更新
+    var hist=this.worldHistory.map(function(h){return {year:h.year, pop:h.pop};});
+    for(var i=0;i<hist.length;i++){ if(hist[i].year===2025){ hist[i].pop=s.world; break; } }
+    drawLineChartXY("chart2", hist,
+      function(v){return fmt(v/100000000)+"億";},
+      function(y){return y;},
+      {min:0, max:10000000000, ticks:5, labelStep:2});  // 最大100億・20億刻み・ラベルは10年ごと
+  }
+},
+
+
+
+/* 3. SNSアクティブユーザー */
+{
+  nav:"SNS利用者", eyebrow:"SOCIAL MEDIA", title:"SNS利用者",
+  desc:"",
+  state:{fb:3070, yt:2530, wa:2000, ig:2040, tt:1590, x:611},
+  render:function(el){
+    el.innerHTML=
+      "<div class='cards'>"+
+        cardHTML("Facebook","百万","m3-fb","d3-fb")+
+        cardHTML("YouTube","百万","m3-yt","d3-yt")+
+        cardHTML("WhatsApp","百万","m3-wa","d3-wa")+
+        cardHTML("Instagram","百万","m3-ig","d3-ig")+
+        cardHTML("TikTok","百万","m3-tt","d3-tt")+
+        cardHTML("X（旧Twitter）","百万","m3-x","d3-x")+
+      "</div>"+
+      chartBlock("月間アクティブユーザーの推移（2005〜2030年・百万人）","MONTHLY ACTIVE USERS","chart3")+
+      "<div class='table-head'><h3>月間アクティブユーザー ランキング</h3><span>（百万人）</span></div>"+
+      "<div class='table-scroll'><table><caption>MONTHLY ACTIVE USERS</caption>"+
+      "<thead><tr><th>順位</th><th>サービス</th><th class='num'>MAU（百万）</th>"+
+      "<th class='num'>前回比</th></tr></thead>"+
+      "<tbody id='sns-body'></tbody></table></div>";
+    this.refresh(el);
+  },
+  refresh:function(el){
+    var s=this.state;
+    var keys=["fb","yt","wa","ig","tt","x"];
+    var names={fb:"Facebook",yt:"YouTube",wa:"WhatsApp",ig:"Instagram",tt:"TikTok",x:"X"};
+    var fullNames={fb:"Facebook",yt:"YouTube",wa:"WhatsApp",ig:"Instagram",tt:"TikTok",x:"X（旧Twitter）"};
+    var deltas={};
+    keys.forEach(function(k){
+      var d=frand(-6,10); deltas[k]=d; s[k]=Math.max(0,s[k]+d);
+      setVal("m3-"+k,fmt2(s[k])); setDelta("d3-"+k,d,"前回比 ",2);
+    });
+    var arr=keys.map(function(k){return {k:k,name:names[k],v:s[k],d:deltas[k]};});
+    arr.sort(function(a,b){return b.v-a.v;});
+    var tb=document.getElementById("sns-body"); if(!tb) return; tb.innerHTML="";
+    arr.forEach(function(o,i){
+      var tr=document.createElement("tr"); tr.className="row-updated";
+      tr.innerHTML="<td class='mono'>"+(i+1)+"</td><td>"+fullNames[o.k]+"</td>"+
+        "<td class='num mono'>"+fmt2(o.v)+"</td>"+
+        "<td class='num mono "+(o.d>=0?"up":"down")+"'>"+signF(o.d,2)+"</td>";
+      tb.appendChild(tr);
+    });
+    // MAU推移（百万人）2005〜2030、5年刻み。null=未登場。最新2030は現在値に連動。
+    var years=[2005,2010,2015,2020,2025,2030];
+    var hist={
+      fb:[6, 608, 1591, 2740, this.state.fb, 3250],
+      yt:[20, 480, 1300, 2100, this.state.yt, 2750],
+      wa:[null, 70, 900, 1800, this.state.wa, 2300],
+      ig:[null, 1, 400, 1400, this.state.ig, 2400],
+      tt:[null, null, 55, 1000, this.state.tt, 2000],
+      x:[null, 30, 305, 350, this.state.x, 700]
+    };
+    var colors={fb:"#02a0ab",yt:"#c0392b",wa:"#27ae60",ig:"#8e44ad",tt:"#1a2530",x:"#e08e0b"};
+    var series=keys.map(function(k){
+      return {name:names[k], color:colors[k], values:hist[k]};
+    });
+    drawMultiLineChart("chart3", years, series,
+      function(v){return fmt(v);},
+      {min:0, max:3500, ticks:5, labelStep:1});  // 最大3500百万・7億刻み
+  }
+}
+
+];
+
+/* =========================================================
+   ③ ページ描画・ナビ・ページャー
+   ========================================================= */
+var current = 0;
+var pageNav       = document.getElementById("pageNav");
+var pageContainer = document.getElementById("pageContainer");
+var pager         = document.getElementById("pager");
+
+PAGES.forEach(function(p,i){
+  var b=document.createElement("button");
+  b.type="button"; b.textContent=p.nav;
+  b.addEventListener("click",function(){ goToPage(i); });
+  pageNav.appendChild(b);
+});
+
+function buildPage(i){
+  var existing=document.getElementById("page-"+i);
+  if(existing) return existing;
+  var p=PAGES[i];
+  var sec=document.createElement("section");
+  sec.className="page"; sec.id="page-"+i;
+  sec.innerHTML=
+    "<div class='page-head'><div class='page-eyebrow'>"+p.eyebrow+"</div>"+
+    "<h2>"+p.title+"</h2>"+(p.desc ? "<p>"+p.desc+"</p>" : "")+"</div>"+
+    "<div class='refresh-row'><button class='refresh' type='button'>データを更新</button>"+
+    "<span>最終更新：<span class='mono' id='upd-"+i+"'>—</span></span></div>"+
+    "<div class='page-body' id='body-"+i+"'></div>";
+  pageContainer.appendChild(sec);
+  var body=sec.querySelector("#body-"+i);
+  p.render(body);
+  stampTime(i);
+  sec.querySelector(".refresh").addEventListener("click",function(){
+    PAGES[i].refresh(document.getElementById("body-"+i));
+    stampTime(i);
+  });
+  return sec;
+}
+
+function stampTime(i){
+  var e=document.getElementById("upd-"+i); if(!e) return;
+  var n=new Date();
+  e.textContent=String(n.getHours()).padStart(2,"0")+":"+
+    String(n.getMinutes()).padStart(2,"0")+":"+String(n.getSeconds()).padStart(2,"0");
+}
+
+function goToPage(i){
+  if(i<0||i>=PAGES.length) return;
+  current=i;
+  buildPage(i);
+  PAGES.forEach(function(_,idx){
+    var el=document.getElementById("page-"+idx);
+    if(el) el.classList.toggle("active", idx===i);
+  });
+  Array.prototype.forEach.call(pageNav.children,function(b,idx){
+    b.classList.toggle("active", idx===i);
+  });
+  renderPager();
+  window.scrollTo(0,0);
+}
+
+function renderPager(){
+  pager.innerHTML="";
+  var prev=document.createElement("button");
+  prev.type="button"; prev.className="nav-btn"; prev.textContent="← 戻る";
+  prev.disabled=(current===0);
+  prev.addEventListener("click",function(){ goToPage(current-1); });
+  pager.appendChild(prev);
+
+  PAGES.forEach(function(_,idx){
+    var b=document.createElement("button");
+    b.type="button"; b.textContent=(idx+1);
+    if(idx===current) b.className="current";
+    b.addEventListener("click",function(){ goToPage(idx); });
+    pager.appendChild(b);
+  });
+
+  var next=document.createElement("button");
+  next.type="button"; next.className="nav-btn"; next.textContent="次へ →";
+  next.disabled=(current===PAGES.length-1);
+  next.addEventListener("click",function(){ goToPage(current+1); });
+  pager.appendChild(next);
+}
+</script>
+</body>
+</html>
