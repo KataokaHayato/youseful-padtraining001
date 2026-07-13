@@ -169,8 +169,8 @@
   .chart-block .chart-cap{font-size:11px;color:var(--gold);letter-spacing:.18em;font-weight:700;margin-bottom:14px}
   .chart-svg{width:100%;height:auto;display:block}
   .chart-svg text{font-family:Arial,"Yu Gothic",sans-serif}
-  .grid-line{stroke:var(--paper-line);stroke-width:1}
-  .axis-label{fill:var(--ink-soft);font-size:13px}
+  .grid-line{stroke:var(--paper-line);stroke-width:1;opacity:.7}
+  .axis-label{fill:#9aa4ad;font-size:12px}
   .legend-label{fill:var(--ink-soft);font-size:12px}
   .bar-rect{fill:var(--accent);transition:width .4s ease,height .4s ease,y .4s ease}
   .bar-track{fill:var(--shade)}
@@ -179,6 +179,27 @@
   .line-path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
   .line-area{fill:var(--accent-soft);opacity:.6}
   .line-dot{fill:var(--white);stroke:var(--accent);stroke-width:2}
+
+  /* ブランドロゴ（Simple Icons をマスクで着色） */
+  .sns-logo{
+    display:inline-block;width:1.15em;height:1.15em;flex:0 0 auto;
+    background-color:var(--brand);vertical-align:-0.22em;
+  }
+  /* グラフ凡例（ロゴ入り・横一列） */
+  .chart-legend{
+    display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;
+    margin-top:16px;padding-top:14px;border-top:1px solid var(--paper-line);
+  }
+  .legend-item{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft)}
+  .legend-item .sns-logo{width:15px;height:15px}
+  .legend-txt{line-height:1}
+  /* SNSカードのラベルにロゴ */
+  .sns-card .label{display:flex;align-items:center;gap:6px}
+  .sns-card .label .sns-logo{width:16px;height:16px}
+  .sns-card .label .unit{margin-left:auto}
+  /* 表内サービス名にロゴ */
+  .sns-cell{display:inline-flex;align-items:center;gap:8px}
+  .sns-cell .sns-logo{width:16px;height:16px}
 
   /* ===== ページャー（次へ/戻る＋数字） ===== */
   .pager{
@@ -421,6 +442,24 @@ function chartBlock(title, cap, chartId){
     "<div id='"+chartId+"'></div></div>";
 }
 
+/* ---- SNSブランド設定（ブランドカラー＋Simple Iconsスラグ） ---- */
+var SNS_COLORS={fb:"#1877F2",yt:"#FF0000",wa:"#25D366",ig:"#E4405F",tt:"#00C4CC",x:"#111111"};
+var SNS_SLUGS ={fb:"facebook",yt:"youtube",wa:"whatsapp",ig:"instagram",tt:"tiktok",x:"x"};
+// Simple Icons CDN（jsDelivr）のロゴを、ブランドカラーで着色したマスク付き円アイコンとして返す
+function logoSpan(k){
+  var url="https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/"+SNS_SLUGS[k]+".svg";
+  return "<span class='sns-logo' style=\"--brand:"+SNS_COLORS[k]+";"+
+    "-webkit-mask:url('"+url+"') center/62% no-repeat;mask:url('"+url+"') center/62% no-repeat;\"></span>";
+}
+// SNS指標カード（ロゴ付き）
+function snsCard(k, label, valueId, deltaId){
+  return "<div class='card sns-card'>"+
+    "<div class='label'>"+logoSpan(k)+"<span>"+label+"</span><span class='unit'>百万</span></div>"+
+    "<div class='value mono' id='"+valueId+"'>—</div>"+
+    "<div class='delta up' id='"+deltaId+"'>—</div>"+
+  "</div>";
+}
+
 // X軸ラベル付き折れ線： data=[{year,pop}] , valFmt=Y値整形 , xFmt=X軸整形
 function drawLineChartXY(id, data, valFmt, xFmt, opts){
   var el=document.getElementById(id); if(!el) return;
@@ -466,7 +505,7 @@ function drawLineChartXY(id, data, valFmt, xFmt, opts){
 function drawMultiLineChart(id, years, series, valFmt, opts){
   var el=document.getElementById(id); if(!el) return;
   opts=opts||{};
-  var W=680, H=320, padL=52, padR=16, padT=16, padB=58;
+  var W=680, H=300, padL=54, padR=22, padT=18, padB=34;
   var plotW=W-padL-padR, plotH=H-padT-padB;
   var allVals=[]; series.forEach(function(s){ allVals=allVals.concat(s.values); });
   var min=(opts.min!==undefined)?opts.min:0;
@@ -477,32 +516,34 @@ function drawMultiLineChart(id, years, series, valFmt, opts){
   function X(i){ return padL + plotW*(i/(n-1)); }
   function Y(v){ return padT + plotH*(1-(v-min)/span); }
   var svg='<svg class="chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">';
+  // 横グリッド（極細）とY軸ラベル
   for(var g=0;g<=ticks;g++){
     var gv=min+span*(g/ticks), gy=Y(gv);
     svg+='<line class="grid-line" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>';
-    svg+='<text class="axis-label" x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end">'+valFmt(gv)+'</text>';
+    svg+='<text class="axis-label" x="'+(padL-10)+'" y="'+(gy+4)+'" text-anchor="end">'+valFmt(gv)+'</text>';
   }
+  // X軸ラベル
   years.forEach(function(y,i){
     if(i%labelStep===0 || i===n-1)
-      svg+='<text class="axis-label" x="'+X(i)+'" y="'+(padT+plotH+18)+'" text-anchor="middle">'+y+'</text>';
+      svg+='<text class="axis-label" x="'+X(i)+'" y="'+(padT+plotH+20)+'" text-anchor="middle">'+y+'</text>';
   });
-  // 各系列のライン
+  // 各系列：なめらかな曲線＋末端ドット＋末端ラベル
   series.forEach(function(s){
-    var line='';
-    s.values.forEach(function(v,i){
-      // 値が0（未登場）区間はスキップして途中から描く
-      if(v===null || v===undefined) return;
-      line+=(line===''?'M':'L')+' '+X(i)+' '+Y(v)+' ';
-    });
-    svg+='<path d="'+line+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
-  });
-  // 凡例（横一列）
-  var ly=padT+plotH+40;
-  var slotW=(W-padL-padR)/series.length;
-  series.forEach(function(s,i){
-    var x=padL + slotW*i;
-    svg+='<rect x="'+x+'" y="'+(ly-8)+'" width="12" height="4" fill="'+s.color+'" rx="1"/>';
-    svg+='<text class="legend-label" x="'+(x+17)+'" y="'+(ly-3)+'">'+s.name+'</text>';
+    var pts=[];
+    s.values.forEach(function(v,i){ if(v!==null&&v!==undefined) pts.push([X(i),Y(v),v]); });
+    if(pts.length===0) return;
+    // Catmull-Rom → ベジェでスムージング
+    var d='M '+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
+    for(var i=0;i<pts.length-1;i++){
+      var p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+      var c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+      var c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+      d+=' C '+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
+    }
+    svg+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.92"/>';
+    // 末端ドット（白フチ）
+    var last=pts[pts.length-1];
+    svg+='<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.5" fill="'+s.color+'" stroke="#fff" stroke-width="1.5"/>';
   });
   svg+='</svg>';
   el.innerHTML=svg;
@@ -689,15 +730,18 @@ var PAGES = [
   state:{fb:3070, yt:2530, wa:2000, ig:2040, tt:1590, x:611},
   render:function(el){
     el.innerHTML=
-      "<div class='cards'>"+
-        cardHTML("Facebook","百万","m3-fb","d3-fb")+
-        cardHTML("YouTube","百万","m3-yt","d3-yt")+
-        cardHTML("WhatsApp","百万","m3-wa","d3-wa")+
-        cardHTML("Instagram","百万","m3-ig","d3-ig")+
-        cardHTML("TikTok","百万","m3-tt","d3-tt")+
-        cardHTML("X（旧Twitter）","百万","m3-x","d3-x")+
+      "<div class='cards sns-cards'>"+
+        snsCard("fb","Facebook","m3-fb","d3-fb")+
+        snsCard("yt","YouTube","m3-yt","d3-yt")+
+        snsCard("wa","WhatsApp","m3-wa","d3-wa")+
+        snsCard("ig","Instagram","m3-ig","d3-ig")+
+        snsCard("tt","TikTok","m3-tt","d3-tt")+
+        snsCard("x","X","m3-x","d3-x")+
       "</div>"+
-      chartBlock("月間アクティブユーザーの推移（2005〜2030年・百万人）","MONTHLY ACTIVE USERS","chart3")+
+      "<div class='chart-block'><h3>月間アクティブユーザーの推移（2005〜2030年・百万人）</h3>"+
+      "<div class='chart-cap'>MONTHLY ACTIVE USERS</div>"+
+      "<div id='chart3'></div>"+
+      "<div class='chart-legend' id='legend3'></div></div>"+
       "<div class='table-head'><h3>月間アクティブユーザー ランキング</h3><span>（百万人）</span></div>"+
       "<div class='table-scroll'><table><caption>MONTHLY ACTIVE USERS</caption>"+
       "<thead><tr><th>順位</th><th>サービス</th><th class='num'>MAU（百万）</th>"+
@@ -710,6 +754,7 @@ var PAGES = [
     var keys=["fb","yt","wa","ig","tt","x"];
     var names={fb:"Facebook",yt:"YouTube",wa:"WhatsApp",ig:"Instagram",tt:"TikTok",x:"X"};
     var fullNames={fb:"Facebook",yt:"YouTube",wa:"WhatsApp",ig:"Instagram",tt:"TikTok",x:"X（旧Twitter）"};
+    var colors=SNS_COLORS, slugs=SNS_SLUGS;
     var deltas={};
     keys.forEach(function(k){
       var d=frand(-6,10); deltas[k]=d; s[k]=Math.max(0,s[k]+d);
@@ -720,12 +765,13 @@ var PAGES = [
     var tb=document.getElementById("sns-body"); if(!tb) return; tb.innerHTML="";
     arr.forEach(function(o,i){
       var tr=document.createElement("tr"); tr.className="row-updated";
-      tr.innerHTML="<td class='mono'>"+(i+1)+"</td><td>"+fullNames[o.k]+"</td>"+
+      tr.innerHTML="<td class='mono'>"+(i+1)+"</td>"+
+        "<td><span class='sns-cell'>"+logoSpan(o.k)+fullNames[o.k]+"</span></td>"+
         "<td class='num mono'>"+fmt2(o.v)+"</td>"+
         "<td class='num mono "+(o.d>=0?"up":"down")+"'>"+signF(o.d,2)+"</td>";
       tb.appendChild(tr);
     });
-    // MAU推移（百万人）2005〜2030、5年刻み。null=未登場。最新2030は現在値に連動。
+    // MAU推移（百万人）2005〜2030、5年刻み。null=未登場。最新2025は現在値に連動。
     var years=[2005,2010,2015,2020,2025,2030];
     var hist={
       fb:[6, 608, 1591, 2740, this.state.fb, 3250],
@@ -735,13 +781,20 @@ var PAGES = [
       tt:[null, null, 55, 1000, this.state.tt, 2000],
       x:[null, 30, 305, 350, this.state.x, 700]
     };
-    var colors={fb:"#02a0ab",yt:"#c0392b",wa:"#27ae60",ig:"#8e44ad",tt:"#1a2530",x:"#e08e0b"};
     var series=keys.map(function(k){
       return {name:names[k], color:colors[k], values:hist[k]};
     });
     drawMultiLineChart("chart3", years, series,
       function(v){return fmt(v);},
-      {min:0, max:3500, ticks:5, labelStep:1});  // 最大3500百万・7億刻み
+      {min:0, max:3500, ticks:5, labelStep:1});
+    // ロゴ入り凡例（テキストもブランドカラー）
+    var lg=document.getElementById("legend3");
+    if(lg){
+      lg.innerHTML = keys.map(function(k){
+        return "<span class='legend-item'>"+logoSpan(k)+
+          "<span class='legend-txt' style='color:"+colors[k]+"'>"+names[k]+"</span></span>";
+      }).join("");
+    }
   }
 }
 
