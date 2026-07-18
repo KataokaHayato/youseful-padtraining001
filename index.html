@@ -155,6 +155,9 @@
   th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--paper-line)}
   thead th{background:var(--accent);color:var(--white);font-size:12px;letter-spacing:.06em;font-weight:600;border-bottom:none}
   tbody tr:nth-child(even){background:var(--shade)}
+  tbody tr.row-other td{color:var(--ink-soft)}
+  tbody tr.row-total{background:var(--accent-soft)!important}
+  tbody tr.row-total td{font-weight:700;color:var(--ink);border-top:2px solid var(--accent)}
   td.num{text-align:right}
   th.num{text-align:right}
   .row-updated{animation:flash 1s ease-out}
@@ -552,56 +555,102 @@ function drawMultiLineChart(id, years, series, valFmt, opts){
 /* ---- ページ定義 ---- */
 var PAGES = [
 
-/* 0. 会員統計ダッシュボード */
+/* 0. 業界POSデータ */
 {
-  nav:"会員統計", eyebrow:"MEMBER DASHBOARD", title:"会員統計",
+  nav:"POSデータ", eyebrow:"POS DASHBOARD", title:"業界POSデータ",
   desc:"",
-  state:{members:128450, access:3200, index:1042.50, rate:92.4},
-  regions:[
-    {code:"HKD",name:"北海道",base:8200},{code:"THK",name:"東北",base:11400},
-    {code:"KTO",name:"関東",base:42600},{code:"CHB",name:"中部",base:18900},
-    {code:"KNS",name:"近畿",base:24300},{code:"CHG",name:"中四国",base:9700},
-    {code:"KYU",name:"九州",base:13350}
+  state:{units:18600, sales:0, unitprice:2580, total:524000},
+  categories:[
+    {code:"CAT-A",name:"カテゴリA",base:4200},{code:"CAT-B",name:"カテゴリB",base:3400},
+    {code:"CAT-C",name:"カテゴリC",base:2800},{code:"CAT-D",name:"カテゴリD",base:2300},
+    {code:"CAT-E",name:"カテゴリE",base:1900},{code:"CAT-F",name:"カテゴリF",base:1500},
+    {code:"CAT-G",name:"カテゴリG",base:1200},{code:"CAT-Z",name:"その他",base:900}
+  ],
+  companies:[
+    {code:"CO-P",name:"P社",base:5600},{code:"CO-Q",name:"Q社",base:4300},
+    {code:"CO-R",name:"R社",base:3200},{code:"CO-S",name:"S社",base:2400},
+    {code:"CO-T",name:"T社",base:1700},{code:"CO-U",name:"その他",base:1400}
   ],
   render:function(el){
     el.innerHTML =
       "<div class='cards'>"+
-        cardHTML("総会員数","名","m0-members","d0-members")+
-        cardHTML("本日アクセス数","件","m0-access","d0-access")+
-        cardHTML("市場指数","pt","m0-index","d0-index")+
-        cardHTML("稼働率","%","m0-rate","d0-rate")+
+        cardHTML("本日の販売台数","台","m0-members","d0-members")+
+        cardHTML("本日の売上高","円","m0-access","d0-access")+
+        cardHTML("単価","円","m0-index","d0-index")+
+        cardHTML("累計販売台数","台","m0-rate","d0-rate")+
       "</div>"+
-      chartBlock("地域別 登録件数","REGIONAL FIGURES","chart0")+
-      "<div class='table-head'><h3>地域別 集計値</h3></div>"+
-      "<div class='table-scroll'><table id='dataTable'><caption>REGIONAL FIGURES</caption>"+
-      "<thead><tr><th>地域コード</th><th>地域名</th><th class='num'>登録件数</th>"+
-      "<th class='num'>当月増減</th><th class='num'>達成率(%)</th></tr></thead>"+
-      "<tbody id='tableBody'></tbody></table></div>";
+      chartBlock("カテゴリ別 販売台数","UNITS BY CATEGORY","chart0")+
+      "<div class='table-head'><h3>カテゴリ別 販売明細</h3></div>"+
+      "<div class='table-scroll'><table id='dataTable'><caption>UNITS BY CATEGORY</caption>"+
+      "<thead><tr><th>カテゴリコード</th><th>カテゴリ名</th><th class='num'>販売台数(台)</th>"+
+      "<th class='num'>前日比</th><th class='num'>構成比(%)</th></tr></thead>"+
+      "<tbody id='tableBody'></tbody></table></div>"+
+      chartBlock("企業別 シェア","MARKET SHARE BY COMPANY","chart0b")+
+      "<div class='table-head'><h3>企業別 シェア明細</h3></div>"+
+      "<div class='table-scroll'><table id='shareTable'><caption>MARKET SHARE BY COMPANY</caption>"+
+      "<thead><tr><th>企業コード</th><th>企業名</th><th class='num'>販売台数(台)</th>"+
+      "<th class='num'>前日比</th><th class='num'>シェア(%)</th></tr></thead>"+
+      "<tbody id='shareBody'></tbody></table></div>";
     this.refresh(el);
   },
   refresh:function(el){
     var s=this.state;
-    var dM=rand(3,45), dA=rand(-80,160), dI=frand(-3,3), dR=frand(-0.6,0.6);
-    s.members+=dM; s.access=Math.max(0,s.access+dA);
-    s.index=Math.max(0,s.index+dI); s.rate=Math.min(100,Math.max(0,s.rate+dR));
-    setVal("m0-members",fmt(s.members)); setVal("m0-access",fmt(s.access));
-    setVal("m0-index",fmt2(s.index));    setVal("m0-rate",s.rate.toFixed(1));
-    setDelta("d0-members",dM,"前日比 ",0); setDelta("d0-access",dA,"前時比 ",0);
-    setDelta("d0-index",dI,"前回比 ",2);   setDelta("d0-rate",dR,"前回比 ",1);
-    var tb=document.getElementById("tableBody"); if(!tb) return; tb.innerHTML="";
-    var chartData=[];
-    this.regions.forEach(function(r){
-      var delta=rand(-120,260), count=r.base+rand(0,400)+delta;
-      var achieve=(85+Math.random()*15).toFixed(1);
-      chartData.push({name:r.name, value:count});
-      var tr=document.createElement("tr"); tr.className="row-updated";
-      tr.innerHTML="<td class='mono'>"+r.code+"</td><td>"+r.name+"</td>"+
-        "<td class='num mono'>"+fmt(count)+"</td>"+
-        "<td class='num mono "+(delta>=0?"up":"down")+"'>"+sign(delta)+"</td>"+
-        "<td class='num mono'>"+achieve+"</td>";
-      tb.appendChild(tr);
-    });
-    drawBarChart("chart0", chartData, function(v){return fmt(v);});
+    var dU=rand(-400,900), dP=rand(-40,60), dT=rand(300,1200);
+    var prevUnits=s.units;
+    s.units=Math.max(0,s.units+dU); s.unitprice=Math.max(1,s.unitprice+dP);
+    dU=s.units-prevUnits;                 // クランプ後の実増減
+    s.total+=dT; s.sales=s.units*s.unitprice;
+    setVal("m0-members",fmt(s.units));  setVal("m0-access",fmt(s.sales));
+    setVal("m0-index",fmt(s.unitprice)); setVal("m0-rate",fmt(s.total));
+    setDelta("d0-members",dU,"前日比 ",0); setDelta("d0-access",dU*s.unitprice,"前日比 ",0);
+    setDelta("d0-index",dP,"前日比 ",0);   setDelta("d0-rate",dT,"前日比 ",0);
+
+    // 本日の販売台数(s.units)を、baseの比率で各項目に按分。端数は最後の行(その他)で吸収し、
+    // 合計が必ず s.units に一致するようにする。前日比も同様に配分し合計=dU に一致させる。
+    function allocate(items, total, totalDelta){
+      var sumBase=items.reduce(function(a,c){return a+c.base;},0);
+      var out=[], acc=0, accD=0;
+      for(var i=0;i<items.length;i++){
+        var v, d;
+        if(i===items.length-1){ v=total-acc; d=totalDelta-accD; }   // 最後で辻褄合わせ
+        else{
+          v=Math.round(total*(items[i].base/sumBase));
+          d=Math.round(totalDelta*(items[i].base/sumBase));
+          acc+=v; accD+=d;
+        }
+        // 微妙なゆらぎを持たせつつ合計は保持（最後の行で吸収されるため崩れない）
+        out.push({code:items[i].code, name:items[i].name, val:Math.max(0,v), delta:d});
+      }
+      return out;
+    }
+    function renderRows(bodyId, rows, total, totalDelta, otherCode, chartId){
+      var body=document.getElementById(bodyId); if(!body) return; body.innerHTML="";
+      var chart=[];
+      rows.forEach(function(r){
+        var share=(total>0 ? r.val/total*100 : 0).toFixed(1);
+        var isOther=(r.code===otherCode);
+        if(!isOther) chart.push({name:r.name, value:r.val});
+        var tr=document.createElement("tr"); tr.className="row-updated"+(isOther?" row-other":"");
+        tr.innerHTML="<td class='mono'>"+r.code+"</td><td>"+r.name+"</td>"+
+          "<td class='num mono'>"+fmt(r.val)+"</td>"+
+          "<td class='num mono "+(r.delta>=0?"up":"down")+"'>"+sign(r.delta)+"</td>"+
+          "<td class='num mono'>"+share+"</td>";
+        body.appendChild(tr);
+      });
+      var tr=document.createElement("tr"); tr.className="row-total";
+      tr.innerHTML="<td class='mono'>—</td><td>合計</td>"+
+        "<td class='num mono'>"+fmt(total)+"</td>"+
+        "<td class='num mono "+(totalDelta>=0?"up":"down")+"'>"+sign(totalDelta)+"</td>"+
+        "<td class='num mono'>100.0</td>";
+      body.appendChild(tr);
+      drawBarChart(chartId, chart, function(v){return fmt(v);});
+    }
+
+    // カテゴリ別・企業別ともに本日の販売台数を按分（合計は必ず s.units、前日比合計は dU）
+    var catRows=allocate(this.categories, s.units, dU);
+    renderRows("tableBody", catRows, s.units, dU, "CAT-Z", "chart0");
+    var coRows=allocate(this.companies, s.units, dU);
+    renderRows("shareBody", coRows, s.units, dU, "CO-U", "chart0b");
   }
 },
 
