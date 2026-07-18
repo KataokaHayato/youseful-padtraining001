@@ -887,12 +887,33 @@ function buildPage(i){
   return sec;
 }
 
-function stampTime(i){
-  var e=document.getElementById("upd-"+i); if(!e) return;
-  var n=new Date();
-  e.textContent=String(n.getHours()).padStart(2,"0")+":"+
-    String(n.getMinutes()).padStart(2,"0")+":"+String(n.getSeconds()).padStart(2,"0");
+var updateTimes={};   // ページごとの最終更新時刻
+
+function relativeTime(ms){
+  var diff=Date.now()-ms;
+  var sec=Math.floor(diff/1000);
+  if(sec<10) return "数秒前";
+  if(sec<60) return sec+"秒前";
+  var min=Math.floor(sec/60);
+  if(min<60) return min+"分前";
+  var hr=Math.floor(min/60);
+  if(hr<24) return hr+"時間前";
+  var day=Math.floor(hr/24);
+  return day+"日前";
 }
+
+function stampTime(i){
+  updateTimes[i]=Date.now();
+  renderStamp(i);
+}
+function renderStamp(i){
+  var e=document.getElementById("upd-"+i); if(!e) return;
+  if(updateTimes[i]) e.textContent=relativeTime(updateTimes[i]);
+}
+// 全ページの相対表記を定期的に更新（分の経過を反映）
+setInterval(function(){
+  for(var k in updateTimes){ renderStamp(k); }
+}, 15000);
 
 function goToPage(i){
   if(i<0||i>=PAGES.length) return;
