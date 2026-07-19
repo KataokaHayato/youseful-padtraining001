@@ -300,11 +300,11 @@
     <div class="login-body">
       <div class="field">
         <label for="userId">ユーザーID</label>
-        <input type="text" id="userId" name="userId" autocomplete="username" placeholder="例：HK0001">
+        <input type="text" id="userId" name="portal_login_id" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="例：HK0001">
       </div>
       <div class="field">
         <label for="password">パスワード</label>
-        <input type="password" id="password" name="password" autocomplete="current-password" placeholder="パスワードを入力">
+        <input type="password" id="password" name="portal_login_pw" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="パスワードを入力">
       </div>
       <div class="err" id="loginError">IDまたはパスワードが正しくありません。もう一度入力してください。</div>
       <button class="btn" id="loginBtn" type="button">ログイン</button>
@@ -355,9 +355,18 @@ document.getElementById("logoutBtn").addEventListener("click", function(){
   appView.style.display     = "none";
   headAccount.style.display = "none";
   loginView.style.display   = "block";
+  document.getElementById("userId").value = "";
   document.getElementById("password").value = "";
   window.scrollTo(0,0);
 });
+
+// オートフィル対策：一部ブラウザは autocomplete="off" を無視するため、
+// 読み込み直後に入力欄を明示的に空にする（保存済みIDやメールが残らないように）。
+function clearLoginFields(){
+  var u=document.getElementById("userId"), p=document.getElementById("password");
+  if(u) u.value=""; if(p) p.value="";
+}
+window.addEventListener("load", function(){ clearLoginFields(); setTimeout(clearLoginFields,200); });
 
 /* =========================================================
    ② データページ定義
